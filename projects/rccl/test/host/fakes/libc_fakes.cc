@@ -32,6 +32,7 @@ std::string g_stdoutData;
 std::vector<MicroFwriteCall> g_fwriteCalls;
 std::vector<MicroPerrorCall> g_perrorCalls;
 std::vector<int> g_closedFds;
+std::vector<void*> g_freedPointers;
 std::vector<FILE*> g_fprintfCalls;
 std::vector<int> g_writtenFds;
 std::vector<int> g_readFds;
@@ -201,6 +202,15 @@ static int DefaultGethostname(char* name, size_t len) { return ::gethostname(nam
 
 static int DefaultAccess(const char* path, int mode) { return ::access(path, mode); }
 
+static void* DefaultMalloc(size_t size) { return std::malloc(size); }
+
+static void* DefaultCalloc(size_t nmemb, size_t size) { return std::calloc(nmemb, size); }
+
+static void DefaultFree(void* ptr) {
+  g_freedPointers.push_back(ptr);
+  std::free(ptr);
+}
+
 // ---------------------------------------------------------------------------
 
 std::function<ssize_t(int, const void*, size_t)> g_write = DefaultWrite;
@@ -221,6 +231,9 @@ std::function<void(const char*)> g_perror = DefaultPerror;
 std::function<void(int)> g_exit = DefaultExit;
 std::function<int(char*, size_t)> g_gethostname = DefaultGethostname;
 std::function<int(const char*, int)> g_access = DefaultAccess;
+std::function<void*(size_t)> g_malloc = DefaultMalloc;
+std::function<void*(size_t, size_t)> g_calloc = DefaultCalloc;
+std::function<void(void*)> g_free = DefaultFree;
 
 void ScriptRead(ssize_t ret, int err, std::string data) {
   g_readScript.push_back(MicroReadStep{ret, err, std::move(data)});
@@ -248,12 +261,16 @@ void ResetLibcFakes() {
   g_exit = DefaultExit;
   g_gethostname = DefaultGethostname;
   g_access = DefaultAccess;
+  g_malloc = DefaultMalloc;
+  g_calloc = DefaultCalloc;
+  g_free = DefaultFree;
 
   g_writtenData.clear();
   g_stdoutData.clear();
   g_fwriteCalls.clear();
   g_perrorCalls.clear();
   g_closedFds.clear();
+  g_freedPointers.clear();
   g_fprintfCalls.clear();
   g_writtenFds.clear();
   g_readFds.clear();
@@ -304,6 +321,9 @@ int micro_fflush(FILE* stream) { return g_fflush(stream); }
 void micro_perror(const char* prefix) { g_perror(prefix); }
 int micro_gethostname(char* name, size_t len) { return g_gethostname(name, len); }
 int micro_access(const char* path, int mode) { return g_access(path, mode); }
+void* micro_malloc(size_t size) { return g_malloc(size); }
+void* micro_calloc(size_t nmemb, size_t size) { return g_calloc(nmemb, size); }
+void micro_free(void* ptr) { g_free(ptr); }
 
 // Always forwards to the real vfprintf so stderr output still happens; records only the FILE* and never the
 // formatted text, since no test needs the diagnostic's wording, only whether and where one was printed.
