@@ -15,6 +15,8 @@ Full documentation for ROCm Systems Profiler is available at [https://rocm.docs.
 - `rocprof-sys-attach` finds the tool library in the target's own ROCm installation when the
   target cannot see this installation's library (for example, inside a container), so
   `ROCPROF_ATTACH_TOOL_LIBRARY` is no longer needed there.
+- `rocprof-sys-attach` re-attaches now use the output format selected for that attach (`-F`), 
+  so a process can be profiled to rocpd in one session and to Perfetto in the next.
 
 ### Resolved issues
 
