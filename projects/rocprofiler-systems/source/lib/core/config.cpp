@@ -519,7 +519,7 @@ inline namespace config
 namespace
 {
 auto cfg_fini_callbacks = std::vector<std::function<void()>>{};
-/*
+
 bool
 json_has_project_name_root(const std::string& json_path)
 {
@@ -537,7 +537,6 @@ json_has_project_name_root(const std::string& json_path)
         return false;
     }
 }
-*/
 void
 register_operation_include_setting(const std::shared_ptr<settings>& _config,
                                    std::unordered_set<std::string>& registered,
@@ -1695,7 +1694,6 @@ configure_settings(bool _init)
             _config->get<std::string>(std::string{ env_vars::CONFIG_FILE }), ";:"))
     {
         const auto expanded_filename = settings::format(filename, _config->get_tag());
-        /*
         // Prevent Timemory's read() silently dropping JSON config files without
         // proper root. Non-existing JSONs should not throw: default
         // ROCPROFSYS_CONFIG_FILE includes '~/.rocprofiler-systems.json' that can be
@@ -1709,7 +1707,7 @@ configure_settings(bool _init)
                 "be loaded. If this is a hierarchical preset configuration, pass it via "
                 "--preset instead.",
                 expanded_filename, TIMEMORY_PROJECT_NAME));
-        }*/
+        }
 
         // Timemory parses config files during static init before main() (see
         // timemory_library_constructor()->init_config()). Bad .json files fail to

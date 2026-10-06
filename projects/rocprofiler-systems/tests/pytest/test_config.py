@@ -338,11 +338,22 @@ CONFIG_TERMINATE_REGEX = (
 CONFIG_ABORT_CODE = -6
 CONFIG_APPLY_FAILURE_REGEX = r"Unable to apply configuration file"
 CONFIG_PRESET_HINT_REGEX = r"specify it with '--preset' instead"
-CONFIG_PARSE_FAILURE_REGEX = [
+# JSON without a rocprofiler-systems root is rejected before Timemory's read().
+CONFIG_JSON_ROOT_REGEX = r"missing the expected 'rocprofiler-systems' root object"
+CONFIG_JSON_PRESET_HINT_REGEX = r"pass it via --preset instead"
+# -c is applied in the profiled process, which aborts.
+CONFIG_JSON_CHILD_FAILURE_REGEX = [
     CONFIG_READ_ERROR_REGEX,
     CONFIG_TERMINATE_REGEX,
-    CONFIG_APPLY_FAILURE_REGEX,
-    CONFIG_PRESET_HINT_REGEX,
+    CONFIG_JSON_ROOT_REGEX,
+    CONFIG_JSON_PRESET_HINT_REGEX,
+]
+# ROCPROFSYS_CONFIG_FILE is read by the launcher, which catches the throw.
+CONFIG_JSON_LAUNCHER_FAILURE_REGEX = [
+    CONFIG_READ_ERROR_REGEX,
+    r"\[rocprof-sys\] error:",
+    CONFIG_JSON_ROOT_REGEX,
+    CONFIG_JSON_PRESET_HINT_REGEX,
 ]
 
 
@@ -440,7 +451,7 @@ class TestConfigXmlViaC(RocprofsysTest):
 @pytest.mark.timeout(120)
 @pytest.mark.class_name("json-via-c")
 class TestJsonViaC(RocprofsysTest):
-    """JSON that does not parse aborts after Timemory's read warning."""
+    """JSON without a rocprofiler-systems root is rejected."""
 
     def _assert_unreadable_json_fails(self, config_target, json_path: Path):
         result = self.run_test(
@@ -453,7 +464,7 @@ class TestJsonViaC(RocprofsysTest):
         _assert_exit_code(result, CONFIG_ABORT_CODE)
         self.assert_regex(
             result,
-            pass_regex=CONFIG_PARSE_FAILURE_REGEX,
+            pass_regex=CONFIG_JSON_CHILD_FAILURE_REGEX,
             use_abort_fail_regex=False,
         )
 
@@ -479,7 +490,7 @@ class TestJsonViaC(RocprofsysTest):
         self._assert_unreadable_json_fails(config_target, exported)
 
     def test_config_file_env(self, config_target, test_output_dir):
-        """Preset JSON in ROCPROFSYS_CONFIG_FILE aborts in the profiled process."""
+        """Preset JSON in ROCPROFSYS_CONFIG_FILE is rejected by the launcher."""
         exported = test_output_dir / "cfg_env.json"
         self.run_test(
             "baseline",
@@ -501,9 +512,9 @@ class TestJsonViaC(RocprofsysTest):
             env=env,
             fail_on_pass=True,
         )
-        _assert_exit_code(result, CONFIG_ABORT_CODE)
+        _assert_exit_code(result, 1)
         self.assert_regex(
             result,
-            pass_regex=CONFIG_PARSE_FAILURE_REGEX,
+            pass_regex=CONFIG_JSON_LAUNCHER_FAILURE_REGEX,
             use_abort_fail_regex=False,
         )
