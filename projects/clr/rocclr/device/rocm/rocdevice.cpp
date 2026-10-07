@@ -1243,8 +1243,9 @@ bool Device::populateOCLDeviceConstants() {
   assert(group_segment_.handle != 0);
 
   // The host writes these signals through the BAR.
-  graph_device_signals_ = DEBUG_CLR_GRAPH_DEV_SIGNALS && info_.largeBar_ &&
-                          (gpu_ext_fine_grained_segment_.handle != 0);
+  const bool device_signal_pool = info_.largeBar_ && (gpu_ext_fine_grained_segment_.handle != 0);
+  graph_device_signals_ = DEBUG_CLR_GRAPH_DEV_SIGNALS && device_signal_pool;
+  queue_device_signals_ = DEBUG_CLR_DEV_SIGNALS && device_signal_pool;
   // Left true by a runtime without the query, since flushing is always correct
   Hsa::agent_get_info(bkendDevice_,
                       static_cast<hsa_agent_info_t>(HSA_AMD_AGENT_INFO_HOST_STORES_NEED_HDP_FLUSH),
