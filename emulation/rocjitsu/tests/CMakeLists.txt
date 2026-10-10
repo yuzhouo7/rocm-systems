@@ -686,6 +686,7 @@ add_executable(
     packed_wmma_test.cpp
     rdna_wmma_i32_test.cpp
     rdna_swmmac_i32_test.cpp
+    rdna_wmma_float_test.cpp
     atomic_semantics_and_decode_test.cpp
     isa_target_registry_test.cpp
     pseudo_scalar_exec_test.cpp
