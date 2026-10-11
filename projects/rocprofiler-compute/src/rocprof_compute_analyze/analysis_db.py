@@ -1133,7 +1133,7 @@ class db_analysis(OmniAnalyze_Base):
         ``extract_row_refs`` (strips ``__passN``). PER_XCD built-ins are evaluated
         before dependents that reference them (same order as ``calc_builtin_vars``).
         """
-        if not used_passes or not pass_layout.has_duplicates:
+        if not used_passes or not pass_layout.is_multi_pass:
             return {}
 
         gpu_series = mi_gpu_specs.get_gpu_series(sys_info["gpu_arch"])
@@ -1196,7 +1196,7 @@ class db_analysis(OmniAnalyze_Base):
         if (
             pass_layout is not None
             and used_passes
-            and pass_layout.has_duplicates
+            and pass_layout.is_multi_pass
             and not legacy_pass_merge_enabled()
         ):
             sys_info.update(
@@ -1299,7 +1299,7 @@ class db_analysis(OmniAnalyze_Base):
             used_passes: set[str] = set()
             if (
                 pass_layout is not None
-                and pass_layout.has_duplicates
+                and pass_layout.is_multi_pass
                 and not legacy_pass_merge_enabled()
             ):
                 gpu_series = mi_gpu_specs.get_gpu_series(sys_info["gpu_arch"])
