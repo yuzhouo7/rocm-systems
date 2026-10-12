@@ -37,10 +37,12 @@ if(HIP_PLATFORM MATCHES "amd")
     CheckRejectedArchs($ENV{HCC_AMDGPU_TARGET})
   endif()
 
-  # The WGP/CU reporting is AMD specific.
+  # The WGP/CU reporting is AMD specific, and the GPR tests pin a kernel's VGPR count with an
+  # AMDGPU register clobber.
   set(TEST_SRC
     ${TEST_SRC}
     hipOccupancyLdsPerMultiprocessor.cc
+    hipOccupancyGprPerMultiprocessor.cc
     )
 
   if(CLUSTERS_SUPPORTED EQUAL 1)

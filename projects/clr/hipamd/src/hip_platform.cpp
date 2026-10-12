@@ -53,8 +53,12 @@ hipError_t ihipOccupancyMaxActiveBlocksPerMultiprocessor(
   const size_t maxVGPRs = adjust_for_wave64
       ? device.info().vgprsPerSimd_ >> 1
       : device.info().vgprsPerSimd_;
+  // The granule has to be rounded with amd::roundUp(): it is 24 (wave32) or 12
+  // (wave64) on the gfx11/gfx12 targets that carry 1536 VGPRs per SIMD, and the
+  // bitmask in amd::alignUp() only rounds up for powers of two. Rounding 120 up
+  // to 136 instead of 120 made the result non monotone in the VGPR count.
   const size_t VgprWaves = wrkGrpInfo->usedVGPRs_ > 0
-      ? maxVGPRs / amd::alignUp(wrkGrpInfo->usedVGPRs_, VgprGranularity)
+      ? maxVGPRs / amd::roundUp<size_t>(wrkGrpInfo->usedVGPRs_, VgprGranularity)
       : MaxWavesPerSimd;
 
   if (VgprWaves == 0) {
@@ -70,8 +74,10 @@ hipError_t ihipOccupancyMaxActiveBlocksPerMultiprocessor(
   const size_t sgprAllocGranule = device.info().sgprAllocGranularity_ != 0
       ? device.info().sgprAllocGranularity_
       : DefaultSgprAllocGranule;
+  // amd::roundUp() for the same reason as the VGPRs above: the granule comgr
+  // reports is 106 on gfx10+, not a power of two.
   const size_t sgprsPerWave =
-      amd::alignUp(wrkGrpInfo->usedSGPRs_, sgprAllocGranule) +
+      amd::roundUp<size_t>(wrkGrpInfo->usedSGPRs_, sgprAllocGranule) +
       device.info().sgprTrapHandlerReserve_;
   const size_t GprWaves = wrkGrpInfo->usedSGPRs_ > 0
       ? std::min(VgprWaves, device.info().sgprsPerSimd_ / sgprsPerWave)

@@ -126,6 +126,18 @@ template <typename T> inline T* alignUp(T* value, size_t alignment) {
   return (T*)alignDown((intptr_t)(value + alignment - 1), alignment);
 }
 
+//! Rounds \p value up to the next multiple of \p alignment.
+//
+// alignUp() above is a bitmask, (v + a - 1) & ~(a - 1), which is a round up
+// only when the alignment is a power of two. Use this instead whenever the
+// alignment comes from hardware or ISA metadata and may not be one: GPR
+// allocation granules, for instance, are 24 or 106 on some targets. An
+// alignment of 0 or 1 leaves the value untouched, so callers can pass a
+// granularity that the device failed to report without dividing by zero.
+template <typename T> inline T roundUp(T value, size_t alignment) {
+  return alignment > 1 ? (T)(((value + alignment - 1) / alignment) * alignment) : value;
+}
+
 template <typename T> inline bool isMultipleOf(T value, size_t alignment) {
   if (isPowerOfTwo(alignment)) {
     // fast path, using logical operators
