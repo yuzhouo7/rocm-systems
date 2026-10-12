@@ -203,6 +203,31 @@ export colliding non-`static` symbols; otherwise a unit needs its own binary:
 - **`rccl-UnitTestsMicroCe`**: `ce_coll.cc` (via `CE_COLL_CC_PATH`); suite
   `CeCollMicrotest.*`. Its own binary because every other target links
   `fakes/ce_fakes.cc`, which fakes the symbols this file defines.
+- **`rccl-UnitTestsMicroNcclDeviceCft`**: `src/nccl_device/core.cc` (via
+  `CORE_CC_PATH`) + `src/cft_dev_runtime.cc` (via `CFT_DEV_RUNTIME_CC_PATH`,
+  from `nccl-cft-dev-runtime-test.cc`); suites `NcclCftDevRuntimeMicrotest.*`,
+  `NcclGetMultimemDeviceLeInfoTest.*`, `NcclGetCftDeviceLeInfoTest.*`,
+  `NcclGetPeerDeviceLeInfoTest.*` (all caught by the `Nccl*` pattern). Its own
+  binary for the same reason as `rccl-UnitTestsMicroNcclDeviceCore`: 6 of
+  core.cc's 7 functions are faked elsewhere in `rccl-UnitTestsMicro`. core.cc
+  is compiled for real here too (not faked) because
+  `ncclGetMultimemDeviceLeInfo`/`ncclGetCftDeviceLeInfo`/`ncclGetPeerDeviceLeInfo`
+  call `ncclTeamCft`/`ncclTeamCftMultimem`. Links `fakes/dev_runtime_fakes.cc`
+  for core.cc's `ncclDevrInitOnce`, and the new `fakes/cft_dev_runtime_fakes.cc`
+  for `cft_dev_runtime.cc`'s own `dev_runtime.cc` callees (`computeLsaSize`,
+  `symTeamObtain`, `findCommAndHostWindowFromDeviceWindow`,
+  `ncclDevrWinRegEnabled`) -- not the real `dev_runtime.cc`, which neither
+  production file needs beyond those four symbols. This build's `CUDA_VERSION`
+  is below 13030, so the CUDA logical-endpoint driver calls throughout
+  `cft_dev_runtime.cc` are compiled out (no ROCm equivalent exists); the tests
+  cover what remains: the zero-and-succeed body of `ncclGpuCftSupport`, the
+  host-side branch logic of `computeCftSize`/`computeCftMcSize`, the
+  condition-evaluation (now-empty) bodies of `symBindTeamLe`/`symUnbindTeamLe`,
+  the trivial-failure stand-ins for `symTeamObtainUcLe`/`symTeamObtainMcLe`,
+  and the three unconditional `ncclGet*DeviceLeInfo` query functions. Lines are
+  100% covered; regions/branches have two residual, well-understood gaps
+  documented in AICOMRCCL-2825 PR4's description (`ncclParamCftEnable`, and
+  `NCCLCHECK`'s own macro-internal branches).
 - **`rccl-UnitTestsMicroSymKernels`** — the REAL `src/sym_kernels.cc` (via
   `SYM_KERNELS_CC_PATH`, from `sym-kernels-test.cc`), compiled together with the
   GENERATED `sym_kernels_host.cc` it calls into; suites `SymKernelMicrotest.*`,
