@@ -140,8 +140,8 @@ A compatible analysis consumer parses the flat fields, nests marker intervals
 per OS thread, and uses ltid plus timestamp containment to attach worker trees
 to their launcher. Across replay passes, ltid is not a stable identity because
 the OS assigns new thread ids. The consumer can exclude it from its stitch
-key while retaining seqNr, tid, and ftid. Consumers expecting the older stacked
-marker syntax require the flat-marker analysis update.
+key while retaining seqNr, tid, and ftid. A stacked Function first token
+(`:#` or `@`) makes current analyze exit during parse.
 
 ## Analyze path
 
@@ -151,23 +151,23 @@ marker syntax require the flat-marker analysis update.
    `_counter_collection.csv`.
 2. Rename on-disk `Correlation_Id` to `Correlation_ID`, then full-outer-join
    unique dispatches to markers on `Correlation_ID` and `GUID`.
-3. Record `UnaccountedKernelError` when a dispatch does not join to a
-   marker on those keys (warns during join). Plain analyze without
-   those flags does not join and does not report that error.
-4. Consolidate matching operator calls across passes on the stitch key plus
-   `function_ordinal`. Record `PassMarkerMismatchError` when operator calls
-   or the kernel-name set disagree across passes (analyze exits).
-5. Parse Function into name, file/line, `Backend`, `launcher_thread_id`
+3. Consolidate matching operator calls across passes on the stitch key plus
+   `function_ordinal`. Collapsed GPU time and kernel lists come from pass 0.
+4. Parse Function into name, file/line, `Backend`, `launcher_thread_id`
    from `ltid=`, and args. `tid=` and `ftid=` stay on the Function cell
    for stitch; they are not analyze columns.
-6. Nest marker intervals per `Thread_Id`. Two markers on the same
-   `Thread_Id` whose intervals overlap (neither nested nor adjacent) record
-   `OverlappingMarkerRangeError`.
-7. Attach unlocated worker trees to the launcher using `ltid` and interval
+5. Nest marker intervals per `Thread_Id`. Adjacent ranges (`A.end == B.start`)
+   are siblings.
+6. Attach unlocated worker trees to the launcher using `ltid` and interval
    containment.
 
-A call-tree root whose backend is in `KNOWN_ML_API_BACKENDS`, with no
-file/line and no launcher thread, records `MissingSourceLocationError`.
+Integrity failures abort analyze before the tree: overlapping non-adjacent
+intervals on the same `Thread_Id`, a marker missing from the nested forest,
+unequal kernel-name and timestamp lists on a marker, or operator or kernel
+disagreement across passes. Coverage issues warn during join and attach, and
+the forest continues: unmatched dispatches, attach failures, and unlocated
+roots in `KNOWN_ML_API_BACKENDS` with no launcher thread. Plain analyze
+without those flags does not join and does not report those conditions.
 
 ## Plain-C interface
 
