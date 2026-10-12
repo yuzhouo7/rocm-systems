@@ -167,8 +167,8 @@ marker syntax require the flat-marker analysis update.
 7. Attach unlocated worker trees to the launcher using `ltid` and interval
    containment.
 
-A torch or triton call-tree root with no file/line and no launcher thread
-records `MissingSourceLocationError`.
+A call-tree root whose backend is in `KNOWN_ML_API_BACKENDS`, with no
+file/line and no launcher thread, records `MissingSourceLocationError`.
 
 ## Plain-C interface
 
