@@ -1741,13 +1741,13 @@ ncclResult_t rcclSelectAllGather(struct ncclComm* comm, const void* sendbuff, vo
       }
       if (!query) INFO(NCCL_TUNING, "AG CE-scratch disqualified: ceScratch=%d hasSysmem=%d ddaScratch=%p totalBytes=%zu ddaScratchBytes=%zu forceCe=%d agCeNonRegWindow=%d",
            (int)ceScratch, (int)hasSysmemSegment, comm->ddaScratch, totalBytes, (size_t)comm->ddaScratchBytes, (int)rcclParamForceCe(), (int)agCeNonRegWindow);
-      // Branch #3: CE via registered symmetric windows. Requires CTAPolicy=ZERO,
-      // symk not eligible, and size within ceRegMax.
+      // Branch #3: CE via registered symmetric windows. CTAPolicy=ZERO or RCCL_FORCE_CE_COLL
+      // bypasses symk eligibility and ceRegMax; otherwise requires !symEligible and size within ceRegMax.
       const bool ceAvailable =
         !ceCapturing && ncclCeAvailable(comm, ncclFuncAllGather, (int)ncclSum, datatype, winRegType, sendWin, recvWin);
       if (ceAvailable && !hasSysmemSegment &&
-          ((comm->config.CTAPolicy & NCCL_CTA_POLICY_ZERO) || rcclForceCeCollEnabled(comm)) &&
-          (!symEligible && rcclAllGatherCeRegisteredWindowTab(archTable, totalBytes, winRegType, ceCapturing))) {
+          ((comm->config.CTAPolicy & NCCL_CTA_POLICY_ZERO) || rcclForceCeCollEnabled(comm) ||
+           (!symEligible && rcclAllGatherCeRegisteredWindowTab(archTable, totalBytes, winRegType, ceCapturing)))) {
         decision->algo = RCCL_CE_REGISTERED;
         return ncclSuccess;
       }
