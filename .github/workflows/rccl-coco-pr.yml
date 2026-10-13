@@ -6,7 +6,7 @@ name: RCCL coco PR
 # One job per cluster: `needs` on a matrix waits for every leg, so sharing a
 # job would let a slow cluster hold up the others.
 #
-# tRCCL config validation requires coco job keys of the form
+# CoCo config validation requires coco job keys of the form
 # <prefix>-rccl-pr-{build,smoke}. Adding a cluster is one entry in
 # .github/scripts/rccl_coco_matrix.py.
 on:
@@ -16,10 +16,10 @@ on:
   workflow_dispatch:
     inputs:
       coco_ref:
-        description: 'ROCm/tRCCL ref for the coco harness.'
+        description: 'ROCm/CoCo ref for the coco harness.'
         type: string
         required: false
-        default: 'main'
+        default: '1.3.x'
       dry_run:
         description: 'Resolve stacks and submissions without building or running anything.'
         type: boolean
@@ -102,7 +102,7 @@ jobs:
         id: resolve
         uses: ./.github/actions/rccl-resolve-coco-run
         with:
-          coco_ref: ${{ inputs.coco_ref || 'main' }}
+          coco_ref: ${{ inputs.coco_ref || '1.3.x' }}
           dry_run: ${{ inputs.dry_run || false }}
           pr_number: ${{ inputs.pr_number }}
           pr_sha: ${{ inputs.pr_sha }}
